@@ -79,7 +79,7 @@ PODCAST_NAME=Your Podcast Name
 YOUTUBE_CATEGORY=22
 ```
 
-Save a file named `background.png` in the same directory as the `pc2yt.py`. This file will be used to generate the static background of the podcast video.
+Save a file named `background.png` in the same directory as the `pc2yt.py`. This file will be used to generate the static background of the podcast video. The size of the image would be 1280x720px.
 
 To send a file from your local machine to a server:
 
