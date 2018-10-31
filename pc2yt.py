@@ -5,6 +5,9 @@ import os
 import random
 import time
 import subprocess
+import sys
+import re
+import cgi
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
@@ -21,15 +24,21 @@ from decouple import config
 import requests
 import feedparser
 
-
 FEED_URL = config('FEED_URL')
 PRIVACY_STATUS = config('PRIVACY_STATUS', default='private')
+PODCAST_NAME = config('PODCAST_NAME', default='')
+EPISODE_NOTES = config('EPISODE_NOTES', default='Episode notes')
+YOUTUBE_CATEGORY = config('YOUTUBE_CATEGORY', default='22') # see youtube categories IDs
+
+if PODCAST_NAME:
+    PODCAST_NAME = 'Podcast ' + PODCAST_NAME + ' - '
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 AUDIOS_DIR = os.path.join(BASE_DIR, 'audios')
 VIDEOS_DIR = os.path.join(BASE_DIR, 'videos')
 BACKGROUND_IMAGE = os.path.join(BASE_DIR, 'background.png')
 LAST_PODCAST_FILE = os.path.join(BASE_DIR, '.last')
+last_episode_uploded = ''
 
 httplib2.RETRIES = 1
 MAX_RETRIES = 10
@@ -47,12 +56,13 @@ VALID_PRIVACY_STATUSES = ('public', 'private', 'unlisted')
 
 
 class Podcast(object):
-    def __init__(self, title, description, url):
-        self.title = title
+    def __init__(self, id, title, description, url, keywords):
+        self.id = id
+        self.title = PODCAST_NAME + title
         self.description = description
         self.url = url
-        self.category = '22'  # see youtube categories IDs
-        self.keywords = ''
+        self.category = YOUTUBE_CATEGORY 
+        self.keywords = keywords
         self.privacyStatus = PRIVACY_STATUS
         self.video_file = None
         self.audio_file = None
@@ -77,8 +87,10 @@ def get_authenticated_service():
 
 def initialize_upload(youtube, options):
     tags = None
+
     if options.keywords:
         tags = options.keywords.split(',')
+
     body=dict(
         snippet=dict(
             title=options.title,
@@ -90,6 +102,7 @@ def initialize_upload(youtube, options):
             privacyStatus=options.privacyStatus
         )
     )
+
     insert_request = youtube.videos().insert(
         part=','.join(body.keys()),
         body=body,
@@ -130,6 +143,18 @@ def resumable_upload(request):
             print 'Sleeping %f seconds and then retrying...' % sleep_seconds
             time.sleep(sleep_seconds)
 
+def cleanhtml(raw_html):
+  #cleanr = re.compile('<.*?>') #old method
+  cleanr = re.compile(r'<[^>]+>') #new method
+
+  cleantext = re.sub(cleanr, '', raw_html)
+  
+  #clean special characters that fails in youtube upload
+
+  #escape special characters
+  cleantext = cgi.escape(cleantext)
+  
+  return cleantext
 
 def get_latest_podcasts():
     podcasts = list()
@@ -149,14 +174,29 @@ def get_latest_podcasts():
                     url = link['href']
                     break
             if url is not None:
-                podcast = Podcast(title=entry['title'], description=entry['subtitle'], url=url)
+                
+                tags = ''
+                for tag in entry['tags']:
+                    if tags:
+                        tags = tags + ', '
+                        
+                    tags = tags + tag.term
+
+                #print 'entry: '
+                #print('\n'.join(map(str, entry))) 
+                #print ('\n', entry)
+
+                content = PODCAST_NAME + '\n' + entry['title'] + '\n\n' + EPISODE_NOTES + ': \n' + entry['link']
+                
+                podcast = Podcast(id=entry['id'], title=entry['title'], description=content, url=url, keywords=tags)
+                
                 podcasts.append(podcast)
         else:
             break
 
-    last = d['entries'][0]['id']
-    with open(LAST_PODCAST_FILE, 'w') as f:
-        f.write(last)
+        last = d['entries'][0]['id']
+        with open(LAST_PODCAST_FILE, 'w') as f:
+            f.write(last)
 
     if podcasts:
         print 'Found %s new podcasts.' % str(len(podcasts))
@@ -194,8 +234,8 @@ def convert_to_flv(podcasts):
             BACKGROUND_IMAGE,
             '-i',
             podcast.audio_file,
-            '-acodec',
-            'copy',
+            '-ar',
+            '44100',
             '-r',
             '1',
             '-shortest',
@@ -221,12 +261,14 @@ def cleanup(podcasts):
         os.remove(podcast.audio_file)
         os.remove(podcast.video_file)
 
-
 if __name__ == '__main__':
     podcasts = get_latest_podcasts()
+    #sys.exit()
+
     if podcasts:
         podcasts = download_podcasts(podcasts)
         podcasts = convert_to_flv(podcasts)
         upload_to_youtube(podcasts)
-        cleanup(podcasts)
+        #cleanup(podcasts)
+
         print 'Process completed!'
