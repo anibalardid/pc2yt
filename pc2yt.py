@@ -58,7 +58,7 @@ VALID_PRIVACY_STATUSES = ('public', 'private', 'unlisted')
 class Podcast(object):
     def __init__(self, id, title, description, url, keywords):
         self.id = id
-        self.title = PODCAST_NAME + title
+        self.title = title
         self.description = description
         self.url = url
         self.category = YOUTUBE_CATEGORY 
@@ -102,6 +102,13 @@ def initialize_upload(youtube, options):
             privacyStatus=options.privacyStatus
         )
     )
+
+    print "\n ----- \n Procesing video: " 
+    print "Title: " + options.title
+    print "Description: " + options.description
+    print "Tags: " 
+    print tags 
+    print "Category: " + options.category + "\n"
 
     insert_request = youtube.videos().insert(
         part=','.join(body.keys()),
@@ -149,7 +156,11 @@ def cleanhtml(raw_html):
 
   cleantext = re.sub(cleanr, '', raw_html)
   
-  #clean special characters that fails in youtube upload
+  #clean special characters that fails in youtubeu upload
+
+  cleantext = re.sub('&#8211;', '-', cleantext) #fix html
+  cleantext = re.sub('&nbsp;', '', cleantext) #fix wp space
+  cleantext = re.sub('&#8230;', '...', cleantext) #fix wp ... 
 
   #escape special characters
   cleantext = cgi.escape(cleantext)
@@ -182,13 +193,20 @@ def get_latest_podcasts():
                         
                     tags = tags + tag.term
 
+                #debug entry
                 #print 'entry: '
                 #print('\n'.join(map(str, entry))) 
                 #print ('\n', entry)
 
+                # truncate if the title size is bigger than 97 characters 
+                title = PODCAST_NAME + entry['title']
+                
+                if len(title) > 99:
+                    title = title[:97] + '...'
+
                 content = PODCAST_NAME + '\n' + entry['title'] + '\n\n' + EPISODE_NOTES + ': \n' + entry['link']
                 
-                podcast = Podcast(id=entry['id'], title=entry['title'], description=content, url=url, keywords=tags)
+                podcast = Podcast(id=entry['id'], title=title, description=content, url=url, keywords=tags)
                 
                 podcasts.append(podcast)
         else:
@@ -269,6 +287,6 @@ if __name__ == '__main__':
         podcasts = download_podcasts(podcasts)
         podcasts = convert_to_flv(podcasts)
         upload_to_youtube(podcasts)
-        #cleanup(podcasts)
+        cleanup(podcasts)
 
         print 'Process completed!'
