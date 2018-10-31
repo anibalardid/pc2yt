@@ -59,12 +59,21 @@ Within the same directory as the `pc2yt.py` file, create two empty folders: `aud
 mkdir audios videos
 ```
 
-Then, create a `.env` file with the URL of your Podcast feed:
+Then, create a `.env` file with :
+
+FEED_URL: url of your feed (mandatory)
+
+PRIVACY_STATUS: 'public', 'private', 'unlisted' (not mandatory)
+
+PODCAST_NAME: this name would be joined before title (not mandatory)
+
 
 **.env**
 
 ```
 FEED_URL=https://example.com/podcast/feed.xml
+PRIVACY_STATUS=private
+PODCAST_NAME=Your Podcast Name
 ```
 
 Save a file named `background.png` in the same directory as the `pc2yt.py`. This file will be used to generate the static background of the podcast video.
@@ -129,6 +138,7 @@ python pc2yt.py --noauth_local_webserver
 When the code reachs the `get_authenticated_service()` function, you will get a notification on the console. It will give you a long URL. Access this URL on a web browser, select which Google account you want to use and what YouTube channel you want to upload the files to. Finally, get the verification code, go back to the console and paste the verification code.
 
 After that you will see the script will create a file named `youtube.dat`. It will now take care of refreshing the token by itself.
+
 
 ## Crontab
 
