@@ -27,7 +27,7 @@ If you already have a Podcast setup and wants to make your episodes available on
 
 ## Limitations
 
-I basically made it to fit my wife's Podcast needs, where she uses [Wordpress](https://wordpress.org) and [Blubrry](https://www.blubrry.com/) to generate the xml feed. I don't really understand much about podcasting, but I believe the xml feed should be more or less standarized.
+It was developed to work with Seriusly Simple Podcasting plugin. I don't know if it works with another podcasting plugins.
 
 The script uses Python 2. 
 
