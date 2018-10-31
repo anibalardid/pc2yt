@@ -69,6 +69,8 @@ PODCAST_NAME: this name would be joined before title (not mandatory)
 
 YOUTUBE_CATEGORY: youtube category id (not mandatory)
 
+EPISODE_NOTES: text to put in the video description (not mandatory)
+
 
 **.env**
 
@@ -77,6 +79,7 @@ FEED_URL=https://example.com/podcast/feed.xml
 PRIVACY_STATUS=private
 PODCAST_NAME=Your Podcast Name
 YOUTUBE_CATEGORY=22
+EPISODE_NOTES=Notas del episodio
 ```
 
 Save a file named `background.png` in the same directory as the `pc2yt.py`. This file will be used to generate the static background of the podcast video. The size of the image would be 1280x720px.
