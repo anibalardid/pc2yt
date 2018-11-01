@@ -108,3 +108,4 @@ videos
 .last
 ffmpeg
 background.png
+.last*
