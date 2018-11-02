@@ -103,7 +103,8 @@ def initialize_upload(youtube, options):
         )
     )
 
-    print "\n ----- \n Procesing video: " 
+    print "\n ---------------------"
+    print "Procesing video: " 
     print "Title: " + options.title
     print "Description: " + options.description
     print "Tags: " 
@@ -177,44 +178,43 @@ def get_latest_podcasts():
             last = ''.join(last.splitlines())
 
     d = feedparser.parse(FEED_URL)
+
+    foundlast = 'false'
     for entry in d['entries']:
-        if entry['id'] != last:
-            url = None
-            for link in entry['links']:
-                if link['type'] == 'audio/mpeg':
-                    url = link['href']
-                    break
-            if url is not None:
-                
-                tags = ''
-                for tag in entry['tags']:
-                    if tags:
-                        tags = tags + ', '
-                        
-                    tags = tags + tag.term
+        if foundlast == 'false':
 
-                #debug entry
-                #print 'entry: '
-                #print('\n'.join(map(str, entry))) 
-                #print ('\n', entry)
+            if entry['id'] != last:
+                url = None
+                for link in entry['links']:
+                    if link['type'] == 'audio/mpeg':
+                        url = link['href']
+                        break
+                if url is not None:
+                    
+                    tags = ''
+                    for tag in entry['tags']:
+                        if tags:
+                            tags = tags + ', '
+                            
+                        tags = tags + tag.term
 
-                # truncate if the title size is bigger than 97 characters 
-                title = PODCAST_NAME + entry['title']
-                
-                if len(title) > 99:
-                    title = title[:97] + '...'
+                    #debug entry
+                    #print 'entry: '
+                    #print('\n'.join(map(str, entry))) 
 
-                content = PODCAST_NAME + '\n' + entry['title'] + '\n\n' + EPISODE_NOTES + ': \n' + entry['link']
-                
-                podcast = Podcast(id=entry['id'], title=title, description=content, url=url, keywords=tags)
-                
-                podcasts.append(podcast)
-        else:
-            break
+                    # truncate if the title size is bigger than 97 characters 
+                    title = PODCAST_NAME + entry['title']
+                    
+                    if len(title) > 99:
+                        title = title[:97] + '...'
 
-        last = d['entries'][0]['id']
-        with open(LAST_PODCAST_FILE, 'w') as f:
-            f.write(last)
+                    content = PODCAST_NAME + '\n' + entry['title'] + '\n\n' + EPISODE_NOTES + ': \n' + entry['link']
+                    
+                    podcast = Podcast(id=entry['id'], title=title, description=content, url=url, keywords=tags)
+                    
+                    podcasts.append(podcast)
+            else:
+                foundlast = 'true'
 
     if podcasts:
         print 'Found %s new podcasts.' % str(len(podcasts))
@@ -269,6 +269,12 @@ def upload_to_youtube(podcasts):
     try:
         for podcast in reversed(podcasts):
             initialize_upload(youtube, podcast)
+            
+            #record latest id processed
+            lastid = podcast.id
+            with open(LAST_PODCAST_FILE, 'w') as f:
+                f.write(lastid)
+            
     except HttpError, e:
         print 'An HTTP error %d occurred:\n%s' % (e.resp.status, e.content)
 
@@ -288,5 +294,5 @@ if __name__ == '__main__':
         podcasts = convert_to_flv(podcasts)
         upload_to_youtube(podcasts)
         cleanup(podcasts)
-
+        
         print 'Process completed!'
